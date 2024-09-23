@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20240917182543 extends AbstractMigration
+final class Version20240920182813 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -19,16 +19,13 @@ final class Version20240917182543 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE "user" (
-        id INT GENERATED ALWAYS AS IDENTITY,
-        username VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        PRIMARY KEY(id)
-    )');
+        $this->addSql('ALTER TABLE "user" ADD email VARCHAR(255) NOT NULL UNIQUE');
+        $this->addSql('ALTER INDEX user_username_key RENAME TO UNIQ_8D93D649F85E0677');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE "user"');
+        $this->addSql('ALTER TABLE "user" DROP email');
+        $this->addSql('ALTER INDEX uniq_8d93d649f85e0677 RENAME TO user_username_key');
     }
 }
