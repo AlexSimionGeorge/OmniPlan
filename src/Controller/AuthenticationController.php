@@ -7,6 +7,7 @@ use App\Exception\MissingFieldsException;
 use App\Exception\UniqueFieldConflictException;
 use App\Repository\UserRepository;
 use App\Service\UserService;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,6 +21,7 @@ class AuthenticationController extends AbstractController
     public function __construct(
         private readonly UserService    $userService,
         private readonly UserRepository $userRepository,
+        private readonly JWTTokenManagerInterface $JWTManager,
     )
     {
     }
@@ -88,15 +90,20 @@ class AuthenticationController extends AbstractController
     {
         try{
             $user = $this->userService->checkCredentials($request);
-        } catch (AuthenticationException $e) {
+        } catch (AuthenticationException|MissingFieldsException $e) {
             return $this->json(
-                ['error' => 'Invalid credentials'],
+                ['error' => $e->getMessage()],
                 Response::HTTP_UNAUTHORIZED
+            );
+        } catch (Throwable $e) {
+            return $this->json(
+                ['error' => 'Internal server error'],
+                Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
 
         return $this->json(
-            ['message' => 'User successfully registered!'],
+            ['token' => $this->JWTManager->create($user)],
             Response::HTTP_CREATED
         );
     }

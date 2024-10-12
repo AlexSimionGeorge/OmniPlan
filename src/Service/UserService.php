@@ -100,6 +100,7 @@ class UserService
      * @param Request $request
      * @return User
      * @throws AuthenticationException if the credentials are invalid
+     * @throws MissingFieldsException
      */
     public function checkCredentials(Request $request): User{
         $data = json_decode($request->getContent(), true);
@@ -109,8 +110,9 @@ class UserService
         }
 
         $user = $this->getUserOnIdentifier($data['identifier']);
+
         if ($user == null || !$this->passwordHasher->isPasswordValid($user, $data['password'])) {
-            throw new AuthenticationException();
+            throw new AuthenticationException('Invalid credentials');
         }
 
         return $user;
