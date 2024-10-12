@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Exception\InvalidFieldValueException;
 use App\Exception\MissingFieldsException;
 use App\Exception\UniqueFieldConflictException;
 use App\Repository\UserRepository;
@@ -23,13 +24,43 @@ class AuthenticationController extends AbstractController
     {
     }
 
+    #[Route('/available', name: 'app_available_fields_check', methods: ["GET"])]
+    public function available(Request $request): JsonResponse
+    {
+        $field = $request->query->get('field');
+        $value = $request->query->get('value');
+
+        if ($field != 'username' && $field != 'email') {
+            return $this->json([
+                'error' => 'Incorrect data was sent.',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $user = $this->userRepository->findOneBy([$field => $value]);
+            if ($user == null) {
+                return $this->json([
+                    'available' => 'true',
+                ], Response::HTTP_OK);
+            }
+            return $this->json([
+                'available' => 'false',
+            ], Response::HTTP_OK);
+        } catch (Throwable $e) {
+            return $this->json(
+                ['error' => 'Internal server error'],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
     #[Route('/register', name: 'app_register', methods: ["POST"])]
     public function register(Request $request): JsonResponse
     {
         try {
             $user = $this->userService->createUser($request);
             $this->userRepository->save($user);
-        } catch (MissingFieldsException $e) {
+        } catch (MissingFieldsException|InvalidFieldValueException $e) {
             return $this->json(
                 ['error' => $e->getMessage()],
                 Response::HTTP_BAD_REQUEST
